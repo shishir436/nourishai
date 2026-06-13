@@ -5,38 +5,14 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev cmake libffi-dev libssl-dev build-essential ccache
-
-      - name: Install python-for-android
-        run: pip install python-for-android
-
-      - name: Create app folder
-        run: |
-          mkdir -p myapp
-          cp index.html myapp/index.html
-
-      - name: Build APK
-        run: |
-          p4a apk \
-            --private myapp \
-            --package=com.nourishai.app \
-            --name="NourishAI" \
-            --version=1.0 \
-            --bootstrap=webview \
-            --requirements=python3 \
-            --arch=armeabi-v7a
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - run: pip install python-for-android
+      - run: sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev cmake libffi-dev libssl-dev build-essential
+      - run: mkdir -p myapp && cp index.html myapp/
+      - run: p4a apk --private myapp --package=com.nourishai.app --name=NourishAI --version=1.0 --bootstrap=webview --requirements=python3 --arch=armeabi-v7a
+      - uses: actions/upload-artifact@v4
         with:
           name: NourishAI-APK
           path: "*.apk"
