@@ -5,52 +5,38 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - name: Install dependencies
+
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev cmake libffi-dev libssl-dev build-essential libsqlite3-dev ccache
-          pip install buildozer cython kivy
-      - name: Create project files
+          sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev cmake libffi-dev libssl-dev build-essential ccache
+
+      - name: Install python-for-android
+        run: pip install python-for-android
+
+      - name: Create app folder
         run: |
-          mkdir -p www
-          cp index.html www/
-          cat > main.py << 'PYEOF'
-          from kivy.app import App
-          from kivy.uix.widget import Widget
-          class NourishAIApp(App):
-              def build(self):
-                  return Widget()
-          if __name__ == '__main__':
-              NourishAIApp().run()
-          PYEOF
-          cat > buildozer.spec << 'SPECEOF'
-          [app]
-          title = NourishAI
-          package.name = nourishai
-          package.domain = com.nourishai
-          source.dir = .
-          source.include_exts = py,html
-          source.include_patterns = www/*.html
-          version = 1.0
-          requirements = python3,kivy,pyjnius,android
-          orientation = portrait
-          android.minapi = 26
-          android.ndk = 25b
-          android.accept_sdk_license = True
-          android.arch = arm64-v8a
-          android.permissions = INTERNET,CAMERA
-          fullscreen = 0
-          [buildozer]
-          log_level = 2
-          SPECEOF
+          mkdir -p myapp
+          cp index.html myapp/index.html
+
       - name: Build APK
-        run: buildozer android debug
+        run: |
+          p4a apk \
+            --private myapp \
+            --package=com.nourishai.app \
+            --name="NourishAI" \
+            --version=1.0 \
+            --bootstrap=webview \
+            --requirements=python3 \
+            --arch=armeabi-v7a
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: NourishAI-APK
-          path: bin/*.apk
+          path: "*.apk"
