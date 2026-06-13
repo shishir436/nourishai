@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NourishAI – Health Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --green-50: #EAF3DE; --green-100: #C0DD97; --green-200: #97C459; --green-400: #639922; --green-600: #3B6D11; --green-800: #27500A;
+    --teal-50: #E1F5EE; --teal-100: #9FE1CB; --teal-200: #5DCAA5; --teal-400: #1D9E75; --teal-600: #0F6E56; --teal-800: #085041;
+    --amber-50: #FAEEDA; --amber-100: #FAC775; --amber-200: #EF9F27; --amber-400: #BA7517; --amber-600: #854F0B;
+    --coral-50: #FAECE7; --coral-100: #F5C4B3; --coral-200: #F0997B; --coral-400: #D85A30; --coral-600: #993C1D;
+    --blue-50: #E6F1FB; --blue-100: #B5D4F4; --blue-400: #378ADD; --blue-600: #185FA5; --blue-800: #0C447C;
+    --gray-100: #D3D1C7; --gray-200: #B4B2A9; --gray-400: #888780; --gray-600: #5F5E5A;
+    --bg: #f8f9fa; --card: #fff; --text: #1a1a1a; --text-muted: #666; --border: rgba(0,0,0,0.1);
+    --r: 14px; --rs: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f0f0f; --card: #1a1a1a; --text: #f0f0f0; --text-muted: #999; --border: rgba(255,255,255,0.1); }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* Nav */
+  .nav { display: flex; background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px 8px; border: none; background: none; color: var(--text-muted); font-size: 10px; cursor: pointer; transition: color 0.2s; border-top: 2px solid transparent; }
+  .nav-btn.active { color: var(--green-400); border-top-color: var(--green-400); }
+  .nav-btn i { font-size: 22px; }
+
+  /* Screens */
+  .screen { display: none; padding: 16px; max-width: 480px; margin: 0 auto; padding-bottom: 80px; }
+  .screen.active { display: block; }
+
+  /* Cards */
+  .card { background: var(--card); border-radius: var(--r); border: 1px solid var(--border); padding: 16px; margin-bottom: 12px; }
+  .card-sm { background: var(--card); border-radius: var(--rs); border: 1px solid var(--border); padding: 12px; }
+
+  /* Typography */
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 12px; }
+  h3 { font-size: 15px; font-weight: 600; }
+  .muted { color: var(--text-muted); font-size: 13px; }
+  .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+
+  /* Calorie ring */
+  .ring-wrap { display: flex; justify-content: center; margin: 8px 0 16px; }
+  .ring-svg { transform: rotate(-90deg); }
+  .ring-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .ring-container { position: relative; display: inline-block; }
+  .ring-val { font-size: 28px; font-weight: 700; line-height: 1; }
+  .ring-sub { font-size: 12px; color: var(--text-muted); }
+
+  /* Macro bars */
+  .macro-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .macro-box { flex: 1; background: var(--bg); border-radius: var(--rs); padding: 10px; text-align: center; }
+  .macro-val { font-size: 18px; font-weight: 600; }
+  .macro-bar { height: 4px; border-radius: 2px; background: var(--border); margin-top: 6px; overflow: hidden; }
+  .macro-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+
+  /* Step gauge */
+  .step-display { text-align: center; padding: 20px 0; }
+  .step-num { font-size: 52px; font-weight: 700; line-height: 1; color: var(--teal-400); }
+  .step-goal { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+  .progress-bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; margin: 12px 0; }
+  .progress-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+
+  /* Water */
+  .water-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+  .glass-btn { aspect-ratio: 1; border-radius: var(--rs); border: 2px solid var(--border); background: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.2s; }
+  .glass-btn.filled { background: var(--blue-50); border-color: var(--blue-400); }
+  .glass-btn.filled i { color: var(--blue-400); }
+  .glass-btn i { color: var(--gray-400); font-size: 22px; }
+
+  /* Camera area */
+  .cam-area { border-radius: var(--r); border: 2px dashed var(--border); background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; margin-bottom: 12px; cursor: pointer; transition: border-color 0.2s; min-height: 200px; position: relative; overflow: hidden; }
+  .cam-area:hover { border-color: var(--green-200); }
+  .cam-area img { width: 100%; height: 220px; object-fit: cover; border-radius: calc(var(--r) - 4px); }
+  #cam-input { display: none; }
+
+  /* Food result */
+  .food-result { background: var(--green-50); border-radius: var(--r); padding: 16px; margin-bottom: 12px; border: 1px solid var(--green-100); }
+  .food-name { font-size: 18px; font-weight: 700; color: var(--green-800); }
+  .food-cals { font-size: 24px; font-weight: 700; color: var(--green-400); }
+  .food-macros { display: flex; gap: 12px; margin-top: 8px; }
+  .food-macro { font-size: 13px; color: var(--green-600); }
+
+  /* Log list */
+  .log-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { font-size: 14px; font-weight: 500; }
+  .log-time { font-size: 12px; color: var(--text-muted); }
+  .log-cal { font-size: 15px; font-weight: 600; color: var(--green-400); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: var(--rs); font-size: 15px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s, transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--green-400); color: #fff; width: 100%; justify-content: center; padding: 13px; font-size: 16px; border-radius: var(--r); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); width: 100%; justify-content: center; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-teal { background: var(--teal-400); color: #fff; }
+  .btn-amber { background: var(--amber-200); color: var(--amber-600); }
+
+  /* Reminder */
+  .reminder-card { background: var(--blue-50); border: 1px solid var(--blue-100); border-radius: var(--r); padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+  .reminder-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-100); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .reminder-icon i { color: var(--blue-600); font-size: 20px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: 500; z-index: 999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+
+  /* Loading pulse */
+  .analyzing { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px; }
+  .pulse-ring { width: 60px; height: 60px; border-radius: 50%; background: var(--green-100); animation: pulse 1.2s ease-in-out infinite; display: flex; align-items: center; justify-content: center; }
+  @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.15);opacity:0.7} }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stat-box { background: var(--bg); border-radius: var(--rs); padding: 12px; text-align: center; }
+  .stat-val { font-size: 22px; font-weight: 700; }
+  .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Greeting */
+  .greeting { margin-bottom: 16px; }
+  .greeting-sub { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Notification badge */
+  .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--coral-400); position: absolute; top: 8px; right: calc(50% - 16px); }
+
+  /* Scroll fix */
+  .scroll-area { overflow-y: auto; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin: 16px 0 8px; }
+
+  input[type=range] { width: 100%; accent-color: var(--green-400); }
+  select { padding: 8px 12px; border-radius: var(--rs); border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 14px; width: 100%; }
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <button class="nav-btn active" onclick="showScreen('home')" id="nav-home">
+    <i class="ti ti-home-2" aria-hidden="true"></i>Today
+  </button>
+  <button class="nav-btn" onclick="showScreen('camera')" id="nav-camera" style="position:relative">
+    <i class="ti ti-camera" aria-hidden="true"></i>Scan
+  </button>
+  <button class="nav-btn" onclick="showScreen('steps')" id="nav-steps">
+    <i class="ti ti-run" aria-hidden="true"></i>Steps
+  </button>
+  <button class="nav-btn" onclick="showScreen('water')" id="nav-water">
+    <i class="ti ti-droplet" aria-hidden="true"></i>Water
+  </button>
+  <button class="nav-btn" onclick="showScreen('log')" id="nav-log">
+    <i class="ti ti-clipboard-list" aria-hidden="true"></i>Log
+  </button>
+</nav>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="greeting">
+    <h1 id="home-greeting">Good morning! 👋</h1>
+    <p class="greeting-sub" id="home-date"></p>
+  </div>
+
+  <div class="card">
+    <div class="label">Calories today</div>
+    <div class="ring-wrap">
+      <div class="ring-container">
+        <svg class="ring-svg" width="140" height="140" viewBox="0 0 140 140">
+          <circle cx="70" cy="70" r="58" fill="none" stroke="var(--border)" stroke-width="12"/>
+          <circle cx="70" cy="70" r="58" fill="none" stroke="var(--green-200)" stroke-width="12" stroke-dasharray="364.4" id="cal-ring" stroke-dashoffset="364.4" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-val" id="cals-eaten">0</div>
+          <div class="ring-sub">of <span id="cals-goal">2000</span> kcal</div>
+        </div>
+      </div>
+    </div>
+    <div class="macro-row">
+      <div class="macro-box">
+        <div class="label">Carbs</div>
+        <div class="macro-val" id="carbs-val" style="color:var(--amber-200)">0g</div>
+        <div class="macro-bar"><div class="macro-fill" id="carbs-bar" style="width:0%;background:var(--amber-200)"></div></div>
+      </div>
+      <div class="macro-box">
+        <div class="label">Protein</div>
+        <div class="macro-val" id="protein-val" style="color:var(--teal-400)">0g</div>
+        <div class="macro-bar"><div class="macro-fill" id="protein-bar" style="width:0%;background:var(--teal-400)"></div></div>
+      </div>
+      <div class="macro-box">
+        <div class="label">Fat</div>
+        <div class="macro-val" id="fat-val" style="color:var(--coral-400)">0g</div>
+        <div class="macro-bar"><div class="macro-fill" id="fat-bar" style="width:0%;background:var(--coral-400)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="home-steps" style="color:var(--teal-400)">0</div>
+      <div class="stat-lbl">Steps today</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="home-water" style="color:var(--blue-400)">0/8</div>
+      <div class="stat-lbl">Glasses of water</div>
+    </div>
+  </div>
+
+  <div class="section-title">Reminders</div>
+  <div id="home-reminders">
+    <div class="reminder-card" id="rem-water" style="display:none">
+      <div class="reminder-icon"><i class="ti ti-droplet" aria-hidden="true"></i></div>
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--blue-800)">Time to drink water!</div>
+        <div style="font-size:12px;color:var(--blue-600)">You haven't logged water in a while</div>
+      </div>
+    </div>
+    <div class="reminder-card" style="background:var(--green-50);border-color:var(--green-100)">
+      <div class="reminder-icon" style="background:var(--green-100)"><i class="ti ti-camera" aria-hidden="true" style="color:var(--green-600)"></i></div>
+      <div>
+        <div style="font-weight:600;font-size:14px;color:var(--green-800)">Log your next meal</div>
+        <div style="font-size:12px;color:var(--green-600)">Tap Scan to identify food with AI</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Calorie goal</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="muted">Daily target</span>
+      <strong id="goal-display">2000 kcal</strong>
+    </div>
+    <input type="range" min="1200" max="3500" step="50" value="2000" id="goal-slider" oninput="updateGoal(this.value)">
+    <div style="display:flex;justify-content:space-between;margin-top:4px">
+      <span class="muted" style="font-size:11px">1200</span>
+      <span class="muted" style="font-size:11px">3500 kcal</span>
+    </div>
+  </div>
+</div>
+
+<!-- CAMERA -->
+<div class="screen" id="screen-camera">
+  <h2>Scan Food</h2>
+  <div class="cam-area" onclick="document.getElementById('cam-input').click()" id="cam-area">
+    <div id="cam-placeholder">
+      <i class="ti ti-camera" style="font-size:48px;color:var(--gray-200);display:block;margin-bottom:12px" aria-hidden="true"></i>
+      <div style="font-weight:600;font-size:16px">Take a photo of your meal</div>
+      <div class="muted" style="margin-top:4px;font-size:13px">AI will identify the dish and estimate calories</div>
+    </div>
+  </div>
+  <input type="file" id="cam-input" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+
+  <div id="food-result-area" style="display:none"></div>
+  <div id="food-add-btn" style="display:none">
+    <button class="btn btn-primary" onclick="addFoodToLog()">
+      <i class="ti ti-plus" aria-hidden="true"></i> Add to today's log
+    </button>
+    <button class="btn btn-outline" style="margin-top:8px" onclick="resetCamera()">
+      <i class="ti ti-refresh" aria-hidden="true"></i> Scan another
+    </button>
+  </div>
+
+  <div class="section-title" style="margin-top:16px">How it works</div>
+  <div class="card-sm muted" style="font-size:13px;line-height:1.6">
+    Point your camera at any meal — a bowl of ramen, salad, bento box — and our AI identifies the dish and estimates nutritional content. Works best with clear, well-lit photos.
+  </div>
+</div>
+
+<!-- STEPS -->
+<div class="screen" id="screen-steps">
+  <h2>Step Counter</h2>
+  <div class="card">
+    <div class="step-display">
+      <div class="step-num" id="step-count">0</div>
+      <div class="step-goal">of <span id="step-goal-lbl">10,000</span> goal</div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="step-bar" style="width:0%;background:linear-gradient(90deg,var(--teal-200),var(--teal-400))"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted)">
+      <span id="step-pct">0% of goal</span>
+      <span id="step-km">0.0 km</span>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="step-cals" style="color:var(--amber-200)">0</div>
+      <div class="stat-lbl">kcal burned</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="step-time" style="color:var(--teal-400)">0 min</div>
+      <div class="stat-lbl">Active time</div>
+    </div>
+  </div>
+
+  <div class="card" id="sensor-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <i class="ti ti-walk" style="font-size:24px;color:var(--teal-400)" aria-hidden="true"></i>
+      <div>
+        <div style="font-weight:600">Step Tracking</div>
+        <div class="muted" style="font-size:12px" id="sensor-status">Ready to track</div>
+      </div>
+      <button class="btn btn-teal btn-sm" style="margin-left:auto" onclick="toggleTracking()" id="track-btn">
+        <i class="ti ti-player-play" aria-hidden="true"></i> Start
+      </button>
+    </div>
+    <p class="muted" style="font-size:13px" id="sensor-msg">Tap Start to begin counting your steps using your device's motion sensor.</p>
+  </div>
+
+  <div class="section-title">Daily goal</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="muted">Step target</span>
+      <strong id="stepgoal-display">10,000 steps</strong>
+    </div>
+    <input type="range" min="1000" max="20000" step="500" value="10000" id="stepgoal-slider" oninput="updateStepGoal(this.value)">
+  </div>
+
+  <div class="section-title">Simulate (for demo)</div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-outline btn-sm" onclick="addSteps(500)">+500 steps</button>
+    <button class="btn btn-outline btn-sm" onclick="addSteps(1000)">+1,000</button>
+    <button class="btn btn-outline btn-sm" onclick="addSteps(2500)">+2,500</button>
+  </div>
+</div>
+
+<!-- WATER -->
+<div class="screen" id="screen-water">
+  <h2>Water Tracker</h2>
+
+  <div class="card" style="text-align:center">
+    <div style="font-size:48px;font-weight:700;color:var(--blue-400)" id="water-count">0</div>
+    <div class="muted">of <span id="water-goal-lbl">8</span> glasses today</div>
+    <div style="margin:16px 0 8px;font-size:13px;font-weight:500;color:var(--text-muted)">Tap glasses to log</div>
+    <div class="water-grid" id="water-glasses"></div>
+    <div class="progress-bar" style="margin:12px 0 4px">
+      <div class="progress-fill" id="water-bar" style="width:0%;background:linear-gradient(90deg,var(--blue-100),var(--blue-400))"></div>
+    </div>
+    <div style="font-size:13px;color:var(--text-muted)" id="water-msg">Stay hydrated!</div>
+  </div>
+
+  <div class="section-title">Reminders</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div>
+        <div style="font-weight:600;font-size:14px">Remind every</div>
+        <div class="muted" style="font-size:12px" id="remind-next">Next reminder in –</div>
+      </div>
+      <select id="remind-select" onchange="setReminder(this.value)" style="width:auto;min-width:120px">
+        <option value="0">Off</option>
+        <option value="30">30 min</option>
+        <option value="60" selected>1 hour</option>
+        <option value="90">90 min</option>
+        <option value="120">2 hours</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="font-size:14px;padding:10px" onclick="drinkNow()">
+      <i class="ti ti-droplet-filled" aria-hidden="true"></i> Log a glass now
+    </button>
+  </div>
+
+  <div class="section-title">Daily goal</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="muted">Glass target</span>
+      <strong id="watergoal-display">8 glasses</strong>
+    </div>
+    <input type="range" min="4" max="16" step="1" value="8" id="watergoal-slider" oninput="updateWaterGoal(this.value)">
+  </div>
+</div>
+
+<!-- LOG -->
+<div class="screen" id="screen-log">
+  <h2>Food Log</h2>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-val" id="log-total-cal" style="color:var(--green-400)">0</div>
+      <div class="stat-lbl">kcal total</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-val" id="log-items" style="color:var(--text)">0</div>
+      <div class="stat-lbl">items logged</div>
+    </div>
+  </div>
+
+  <div class="card" id="log-list-card">
+    <div id="log-empty" style="text-align:center;padding:24px 0;color:var(--text-muted)">
+      <i class="ti ti-salad" style="font-size:36px;display:block;margin-bottom:8px;color:var(--gray-200)" aria-hidden="true"></i>
+      <div style="font-size:14px">No meals logged yet</div>
+      <div style="font-size:12px;margin-top:4px">Use the Scan tab to add food</div>
+    </div>
+    <div id="log-entries"></div>
+    <button class="btn btn-outline btn-sm" style="margin-top:12px;display:none" id="clear-log-btn" onclick="clearLog()">
+      <i class="ti ti-trash" aria-hidden="true"></i> Clear today's log
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ANTHROPIC_KEY_HEADER = 'x-api-key';
+
+const state = {
+  calories: 0, calorieGoal: 2000,
+  carbs: 0, protein: 0, fat: 0,
+  steps: 0, stepGoal: 10000, tracking: false,
+  water: 0, waterGoal: 8,
+  log: [],
+  reminderInterval: 60, nextReminder: null,
+  lastWaterTime: Date.now(),
+  pendingFood: null,
+  stepSensor: null
+};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function updateGoal(v) {
+  state.calorieGoal = parseInt(v);
+  document.getElementById('goal-display').textContent = v + ' kcal';
+  updateCalorieRing();
+}
+
+function updateCalorieRing() {
+  const pct = Math.min(state.calories / state.calorieGoal, 1);
+  const circ = 2 * Math.PI * 58;
+  const offset = circ * (1 - pct);
+  document.getElementById('cal-ring').style.strokeDashoffset = offset;
+  document.getElementById('cals-eaten').textContent = state.calories;
+  document.getElementById('cals-goal').textContent = state.calorieGoal;
+  document.getElementById('carbs-val').textContent = state.carbs + 'g';
+  document.getElementById('protein-val').textContent = state.protein + 'g';
+  document.getElementById('fat-val').textContent = state.fat + 'g';
+  document.getElementById('carbs-bar').style.width = Math.min(state.carbs/250*100,100)+'%';
+  document.getElementById('protein-bar').style.width = Math.min(state.protein/100*100,100)+'%';
+  document.getElementById('fat-bar').style.width = Math.min(state.fat/80*100,100)+'%';
+}
+
+// Steps
+function updateStepGoal(v) {
+  state.stepGoal = parseInt(v);
+  document.getElementById('stepgoal-display').textContent = Number(v).toLocaleString()+' steps';
+  document.getElementById('step-goal-lbl').textContent = Number(v).toLocaleString();
+  renderSteps();
+}
+
+function addSteps(n) {
+  state.steps += n;
+  renderSteps();
+}
+
+function renderSteps() {
+  const s = state.steps;
+  document.getElementById('step-count').textContent = s.toLocaleString();
+  document.getElementById('step-bar').style.width = Math.min(s/state.stepGoal*100,100)+'%';
+  document.getElementById('step-pct').textContent = Math.round(s/state.stepGoal*100)+'% of goal';
+  document.getElementById('step-km').textContent = (s*0.0007).toFixed(1)+' km';
+  document.getElementById('step-cals').textContent = Math.round(s*0.04);
+  document.getElementById('step-time').textContent = Math.round(s/100)+' min';
+  document.getElementById('home-steps').textContent = s.toLocaleString();
+}
+
+function toggleTracking() {
+  if (state.tracking) {
+    state.tracking = false;
+    document.getElementById('track-btn').innerHTML = '<i class="ti ti-player-play"></i> Start';
+    document.getElementById('sensor-status').textContent = 'Paused';
+    if (state.stepSensor) { state.stepSensor.stop(); state.stepSensor = null; }
+    return;
+  }
+  state.tracking = true;
+  document.getElementById('track-btn').innerHTML = '<i class="ti ti-player-pause"></i> Pause';
+  document.getElementById('sensor-status').textContent = 'Tracking...';
+
+  if (typeof DeviceMotionEvent !== 'undefined') {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission().then(r => {
+        if (r === 'granted') startMotionTracking();
+        else { document.getElementById('sensor-msg').textContent = 'Permission denied. Use the + buttons below to simulate steps.'; }
+      });
+    } else {
+      startMotionTracking();
+    }
+  } else {
+    document.getElementById('sensor-msg').textContent = 'Motion sensor not available. Use the + buttons to simulate steps.';
+  }
+}
+
+function startMotionTracking() {
+  let lastMag = 0, threshold = 12, minInterval = 400, lastStep = 0;
+  document.getElementById('sensor-msg').textContent = 'Walk naturally — counting every step!';
+  function onMotion(e) {
+    if (!state.tracking) return;
+    const a = e.accelerationIncludingGravity;
+    if (!a) return;
+    const mag = Math.sqrt(a.x**2+a.y**2+a.z**2);
+    const now = Date.now();
+    if (mag > threshold && lastMag <= threshold && (now-lastStep) > minInterval) {
+      state.steps++;
+      lastStep = now;
+      renderSteps();
+    }
+    lastMag = mag;
+  }
+  window.addEventListener('devicemotion', onMotion);
+  state.stepSensor = { stop: () => window.removeEventListener('devicemotion', onMotion) };
+}
+
+// Water
+function renderWater() {
+  const goal = state.waterGoal;
+  const glasses = document.getElementById('water-glasses');
+  glasses.innerHTML = '';
+  for (let i = 0; i < goal; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'glass-btn' + (i < state.water ? ' filled' : '');
+    btn.innerHTML = '<i class="ti ti-droplet' + (i < state.water ? '-filled' : '') + '" aria-hidden="true"></i>';
+    btn.onclick = () => setWater(i < state.water ? i : i+1);
+    glasses.appendChild(btn);
+  }
+  document.getElementById('water-count').textContent = state.water;
+  document.getElementById('water-goal-lbl').textContent = goal;
+  document.getElementById('water-bar').style.width = Math.min(state.water/goal*100,100)+'%';
+  document.getElementById('home-water').textContent = state.water+'/'+goal;
+  const msgs = ['Stay hydrated! 💧','Good start!','Halfway there!','Almost there!','Goal reached! 🎉'];
+  const idx = Math.min(Math.floor(state.water/goal*4), 4);
+  document.getElementById('water-msg').textContent = msgs[idx];
+}
+
+function setWater(n) {
+  state.water = Math.max(0, Math.min(n, state.waterGoal));
+  state.lastWaterTime = Date.now();
+  renderWater();
+  if (state.water >= state.waterGoal) showToast('🎉 Daily water goal reached!');
+}
+
+function drinkNow() {
+  if (state.water < state.waterGoal) {
+    setWater(state.water + 1);
+    showToast('💧 Glass logged!');
+  } else {
+    showToast('You\'ve hit your goal! 🎉');
+  }
+}
+
+function updateWaterGoal(v) {
+  state.waterGoal = parseInt(v);
+  document.getElementById('watergoal-display').textContent = v+' glasses';
+  renderWater();
+}
+
+// Reminders
+function setReminder(mins) {
+  state.reminderInterval = parseInt(mins);
+  clearInterval(state.reminderTimer);
+  if (mins === '0') { document.getElementById('remind-next').textContent = 'Reminders off'; return; }
+  scheduleReminder();
+}
+
+function scheduleReminder() {
+  const ms = state.reminderInterval * 60 * 1000;
+  state.nextReminderTime = Date.now() + ms;
+  updateRemindLabel();
+  clearInterval(state.reminderTimer);
+  state.reminderTimer = setInterval(() => {
+    if (state.water < state.waterGoal) {
+      document.getElementById('rem-water').style.display = 'flex';
+      showToast('💧 Time to drink water!');
+    }
+    scheduleReminder();
+  }, ms);
+}
+
+function updateRemindLabel() {
+  if (!state.reminderInterval) return;
+  const remaining = Math.max(0, Math.round((state.nextReminderTime - Date.now()) / 60000));
+  document.getElementById('remind-next').textContent = 'Next reminder in ' + remaining + ' min';
+}
+
+// Camera & AI
+async function handlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const area = document.getElementById('cam-area');
+  area.innerHTML = '<div class="analyzing"><div class="pulse-ring"><i class="ti ti-brain" style="font-size:28px;color:var(--green-400)"></i></div><div style="font-weight:600">Analyzing your meal…</div><div class="muted" style="font-size:13px">AI is identifying ingredients</div></div>';
+
+  // Convert to base64
+  const base64 = await fileToBase64(file);
+  try {
+    const result = await analyzeFood(base64, file.type);
+    state.pendingFood = result;
+    showFoodResult(result, url);
+  } catch(err) {
+    area.innerHTML = `<div style="text-align:center;padding:20px"><i class="ti ti-alert-circle" style="font-size:36px;color:var(--coral-400);display:block;margin-bottom:8px"></i><div style="font-weight:600">Couldn't analyze image</div><div class="muted" style="font-size:13px;margin-top:4px">${err.message}</div><button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="resetCamera()">Try again</button></div>`;
+  }
+  e.target.value = '';
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function analyzeFood(base64, mtype) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 600,
+      system: 'You are a nutrition expert. When given a food image, respond ONLY with valid JSON (no markdown, no backticks). The JSON must have: name (string, dish name), calories (integer, estimated kcal per serving), carbs (integer, grams), protein (integer, grams), fat (integer, grams), serving (string, e.g. "1 bowl ~400g"), confidence (string: "high", "medium", or "low"), notes (string, 1 short sentence). If no food is visible, return {"error": "No food detected"}.',
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mtype, data: base64 } },
+        { type: 'text', text: 'Identify this food and provide nutritional estimates as JSON.' }
+      ]}]
+    })
+  });
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message || 'API error');
+  const text = data.content.map(c => c.text || '').join('');
+  const clean = text.replace(/```json|```/g,'').trim();
+  const parsed = JSON.parse(clean);
+  if (parsed.error) throw new Error(parsed.error);
+  return parsed;
+}
+
+function showFoodResult(f, imgUrl) {
+  const area = document.getElementById('cam-area');
+  area.innerHTML = `<img src="${imgUrl}" alt="Food photo" style="width:100%;height:220px;object-fit:cover;border-radius:10px">`;
+
+  const resultArea = document.getElementById('food-result-area');
+  const confColor = f.confidence === 'high' ? 'var(--green-400)' : f.confidence === 'medium' ? 'var(--amber-200)' : 'var(--coral-400)';
+  resultArea.style.display = 'block';
+  resultArea.innerHTML = `
+    <div class="food-result">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="food-name">${f.name}</div>
+          <div style="font-size:13px;color:var(--green-600);margin-top:2px">${f.serving}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="food-cals">${f.calories}</div>
+          <div style="font-size:11px;color:var(--green-600)">kcal</div>
+        </div>
+      </div>
+      <div class="food-macros">
+        <div class="food-macro"><strong style="color:var(--amber-400)">${f.carbs}g</strong> carbs</div>
+        <div class="food-macro"><strong style="color:var(--teal-400)">${f.protein}g</strong> protein</div>
+        <div class="food-macro"><strong style="color:var(--coral-400)">${f.fat}g</strong> fat</div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--green-600)">${f.notes}</div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;color:var(--text-muted)">Confidence:</span>
+        <span style="font-size:11px;font-weight:600;color:${confColor}">${f.confidence.toUpperCase()}</span>
+      </div>
+    </div>
+  `;
+  document.getElementById('food-add-btn').style.display = 'block';
+}
+
+function addFoodToLog() {
+  if (!state.pendingFood) return;
+  const f = state.pendingFood;
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en', {hour:'2-digit', minute:'2-digit'});
+  state.log.push({ name: f.name, calories: f.calories, carbs: f.carbs, protein: f.protein, fat: f.fat, time: timeStr });
+  state.calories += f.calories;
+  state.carbs += f.carbs;
+  state.protein += f.protein;
+  state.fat += f.fat;
+  updateCalorieRing();
+  renderLog();
+  showToast('✅ ' + f.name + ' added!');
+  state.pendingFood = null;
+  resetCamera();
+  document.getElementById('rem-water').style.display = 'none';
+}
+
+function resetCamera() {
+  document.getElementById('cam-area').innerHTML = `<div id="cam-placeholder"><i class="ti ti-camera" style="font-size:48px;color:var(--gray-200);display:block;margin-bottom:12px"></i><div style="font-weight:600;font-size:16px">Take a photo of your meal</div><div class="muted" style="margin-top:4px;font-size:13px">AI will identify the dish and estimate calories</div></div>`;
+  document.getElementById('food-result-area').style.display = 'none';
+  document.getElementById('food-add-btn').style.display = 'none';
+  state.pendingFood = null;
+}
+
+function renderLog() {
+  const entries = document.getElementById('log-entries');
+  const empty = document.getElementById('log-empty');
+  const clearBtn = document.getElementById('clear-log-btn');
+  document.getElementById('log-total-cal').textContent = state.calories;
+  document.getElementById('log-items').textContent = state.log.length;
+  if (state.log.length === 0) { empty.style.display='block'; entries.innerHTML=''; clearBtn.style.display='none'; return; }
+  empty.style.display = 'none';
+  clearBtn.style.display = 'flex';
+  entries.innerHTML = state.log.slice().reverse().map(item => `
+    <div class="log-item">
+      <div>
+        <div class="log-name">${item.name}</div>
+        <div class="log-time">${item.time} &nbsp;·&nbsp; C:${item.carbs}g P:${item.protein}g F:${item.fat}g</div>
+      </div>
+      <div class="log-cal">${item.calories} kcal</div>
+    </div>
+  `).join('');
+}
+
+function clearLog() {
+  state.log = []; state.calories = 0; state.carbs = 0; state.protein = 0; state.fat = 0;
+  updateCalorieRing(); renderLog();
+  showToast('Log cleared');
+}
+
+// Init
+function init() {
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good morning! 👋' : h < 17 ? 'Good afternoon! 👋' : 'Good evening! 👋';
+  document.getElementById('home-greeting').textContent = greet;
+  document.getElementById('home-date').textContent = now.toLocaleDateString('en', {weekday:'long', month:'long', day:'numeric'});
+  updateCalorieRing();
+  renderWater();
+  renderSteps();
+  renderLog();
+  scheduleReminder();
+  setInterval(updateRemindLabel, 30000);
+  setInterval(() => {
+    const minsSinceWater = (Date.now() - state.lastWaterTime) / 60000;
+    if (minsSinceWater > state.reminderInterval && state.water < state.waterGoal && state.reminderInterval > 0) {
+      document.getElementById('rem-water').style.display = 'flex';
+    }
+  }, 60000);
+}
+
+init();
+</script>
+</body>
+</html>
