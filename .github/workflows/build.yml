@@ -11,7 +11,7 @@ jobs:
       - run: pip install python-for-android
       - run: sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev cmake libffi-dev libssl-dev build-essential
       - run: mkdir -p myapp && cp index.html myapp/
-      - run: p4a apk --private myapp --package=com.nourishai.app --name=NourishAI --version=1.0 --bootstrap=webview --requirements=python3 --arch=armeabi-v7a
+      - - run: p4a apk --private myapp --package=com.nourishai.app --name=NourishAI --version=1.0 --bootstrap=webview --requirements=python3 --arch=armeabi-v7a --android-api 34
       - uses: actions/upload-artifact@v4
         with:
           name: NourishAI-APK
